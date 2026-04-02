@@ -1,4 +1,3 @@
-
 import torch
 from model import GPT
 from train import Solution as Trainer
@@ -7,26 +6,38 @@ from generate import Solution as Generator
 # ---------------------------
 # Hyperparameters
 # ---------------------------
-vocab_size = 65       # number of unique tokens
-context_length = 32   # sequence length
-model_dim = 64        # embedding / hidden size
-num_blocks = 2        # number of transformer blocks
-num_heads = 4         # number of attention heads
+context_length = 32
+model_dim = 64
+num_blocks = 2
+num_heads = 4
 batch_size = 8
-epochs = 5
+epochs = 50       # increase for better learning
 lr = 1e-3
-new_chars = 100       # number of characters to generate
+new_chars = 200   # number of characters to generate
 
 # ---------------------------
-# Dummy dataset
+# Load small text dataset
 # ---------------------------
-# Generate a random sequence of token IDs
-data_length = 1000
-data = torch.randint(0, vocab_size, (data_length,))
+# Here we just use a small string. You can replace it with a file.
+text = (
+    "To be, or not to be, that is the question:\n"
+    "Whether 'tis nobler in the mind to suffer\n"
+    "The slings and arrows of outrageous fortune,"
+)
 
-# Simple int_to_char mapping (for generation)
-# Maps 0 -> 'A', 1 -> 'B', etc.
-int_to_char = {i: chr(65 + i) for i in range(vocab_size)}
+# with open("text.txt") as f:
+#     text = f.read()
+
+# ---------------------------
+# Build character vocabulary
+# ---------------------------
+chars = sorted(list(set(text)))
+vocab_size = len(chars)
+char_to_int = {ch: i for i, ch in enumerate(chars)}
+int_to_char = {i: ch for ch, i in char_to_int.items()}
+
+# Convert text to tensor of token IDs
+data = torch.tensor([char_to_int[ch] for ch in text], dtype=torch.long)
 
 # ---------------------------
 # Create GPT model
@@ -51,9 +62,7 @@ print("Final training loss:", final_loss)
 # Generate text
 # ---------------------------
 generator = Generator()
-
-# Start context: first sequence from data
-start_context = data[:context_length].unsqueeze(0)  # shape (1, context_length)
+start_context = data[:context_length].unsqueeze(0)  # initial context
 generated_text = generator.generate(
     model=model,
     new_chars=new_chars,
@@ -61,5 +70,6 @@ generated_text = generator.generate(
     context_length=context_length,
     int_to_char=int_to_char
 )
-print("Generated text:")
+
+print("\nGenerated text:\n")
 print(generated_text)
