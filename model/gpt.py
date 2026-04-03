@@ -6,7 +6,6 @@ class GPT(nn.Module):
     
     def __init__(self, vocab_size: int, context_length: int, model_dim: int, num_blocks: int, num_heads: int):
         super().__init__()
-        torch.manual_seed(0)
         self.word_embeddings = nn.Embedding(vocab_size, model_dim)
         self.position_embeddings = nn.Embedding(context_length, model_dim)
         self.transformer_blocks = nn.Sequential()
@@ -16,7 +15,6 @@ class GPT(nn.Module):
         self.vocab_projection = nn.Linear(model_dim, vocab_size)
 
     def forward(self, context: TensorType[int]) -> TensorType[float]:
-        torch.manual_seed(0)
         # Token embeddings + positional embeddings
         embedded = self.word_embeddings(context)
         positions = torch.arange(context.shape[1], device=context.device)
@@ -27,7 +25,7 @@ class GPT(nn.Module):
         logits = self.vocab_projection(output)  # (B, T, vocab_size)
 
         probabilities = nn.functional.softmax(logits, dim=-1)
-        return torch.round(probabilities, decimals=4)
+        return probabilities
     
     class TransformerBlock(nn.Module):
 
@@ -36,7 +34,6 @@ class GPT(nn.Module):
             class SingleHeadAttention(nn.Module):
                 def __init__(self, model_dim: int, head_size: int):
                     super().__init__()
-                    torch.manual_seed(0)
                     self.key_gen = nn.Linear(model_dim, head_size, bias=False)
                     self.query_gen = nn.Linear(model_dim, head_size, bias=False)
                     self.value_gen = nn.Linear(model_dim, head_size, bias=False)
@@ -59,7 +56,6 @@ class GPT(nn.Module):
                 
             def __init__(self, model_dim: int, num_heads: int):
                 super().__init__()
-                torch.manual_seed(0)
                 self.att_heads = nn.ModuleList()
                 for i in range(num_heads):
                     self.att_heads.append(self.SingleHeadAttention(model_dim, model_dim // num_heads))
@@ -87,14 +83,12 @@ class GPT(nn.Module):
 
         def __init__(self, model_dim: int, num_heads: int):
             super().__init__()
-            torch.manual_seed(0)
             self.attention = self.MultiHeadedSelfAttention(model_dim, num_heads)
             self.linear_network = self.VanillaNeuralNetwork(model_dim)
             self.first_norm = nn.LayerNorm(model_dim)
             self.second_norm = nn.LayerNorm(model_dim)
 
         def forward(self, embedded: TensorType[float]) -> TensorType[float]:
-            torch.manual_seed(0)
             embedded = embedded + self.attention(self.first_norm(embedded)) # skip connection
             embedded = embedded + self.linear_network(self.second_norm(embedded)) # another skip connection
             return embedded
